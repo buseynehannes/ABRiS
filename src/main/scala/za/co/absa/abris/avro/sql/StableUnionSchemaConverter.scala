@@ -20,6 +20,8 @@ import org.apache.avro.Schema
 import org.apache.spark.sql.avro.SchemaConverters
 import org.apache.spark.sql.types.DataType
 
+import scala.util.Try
+
 /** A [[SchemaConverter]] that maps Avro union branches to stable, name-based Spark struct fields.
   *
   * By default, ABRiS (via Spark's [[SchemaConverters]]) maps each non-null branch of an Avro
@@ -30,9 +32,9 @@ import org.apache.spark.sql.types.DataType
   * instead (e.g. `member_Address`, `member_Reference`). Paths become self-documenting and robust
   * against union branch reordering.
   *
-  * Requires Spark 3.5.0 or later. An [[UnsupportedOperationException]] is thrown at plan
-  * evaluation time if the running Spark version does not expose the two-argument overload of
-  * [[SchemaConverters.toSqlType]].
+  * Requires Spark 3.5.1 or later. An [[UnsupportedOperationException]] is thrown at plan
+  * evaluation time if the running Spark version does not expose the `(Schema, Boolean)` overload
+  * of [[SchemaConverters.toSqlType]].
   *
   * Use via [[za.co.absa.abris.config.FromAvroConfig.withSchemaConverter]]:
   * {{{
@@ -47,14 +49,23 @@ import org.apache.spark.sql.types.DataType
 class StableUnionSchemaConverter extends SchemaConverter {
   override val shortName: String = "stable-union"
 
+  // Resolved once per instance via reflection to stay compatible with Spark versions that do not
+  // have the (Schema, Boolean) overload (i.e. < 3.5.1).
+  private val toSqlTypeWithFlag: Option[java.lang.reflect.Method] = Try {
+    SchemaConverters.getClass.getMethod("toSqlType", classOf[Schema], classOf[Boolean])
+  }.toOption
+
   override def toSqlType(avroSchema: Schema): DataType = {
-    try {
-      SchemaConverters.toSqlType(avroSchema, useStableIdForUnionType = true).dataType
-    } catch {
-      case _: NoSuchMethodException =>
+    toSqlTypeWithFlag match {
+      case Some(method) =>
+        method.invoke(SchemaConverters, avroSchema, true: java.lang.Boolean)
+          .asInstanceOf[SchemaConverters.SchemaType]
+          .dataType
+      case None =>
         throw new UnsupportedOperationException(
-          "The \"stable-union\" schema converter requires Spark 3.5.0 or later. " +
-          "The running Spark version does not support the two-argument SchemaConverters.toSqlType overload."
+          "The \"stable-union\" schema converter requires Spark 3.5.1 or later. " +
+          "The running Spark version does not support the (Schema, Boolean) overload of " +
+          "SchemaConverters.toSqlType."
         )
     }
   }
