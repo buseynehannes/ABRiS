@@ -274,6 +274,41 @@ val abrisConfig = AbrisConfig
   .withSchemaConverter("custom")
 ```
 
+### Stable union field names (Spark 3.5.1+)
+
+By default, Avro multi-type unions are decoded into a Spark struct where each branch is named
+positionally: `member0`, `member1`, etc. The concrete branch that holds a value is non-null;
+the others are null. This means column paths like `col("data.field.member0.url")` depend on the
+order in which types are declared in the Avro schema — a union reordering silently changes the
+meaning of the path.
+
+Enabling stable union IDs makes Spark name each branch after its Avro type instead:
+`member_<TypeName>` (e.g. `member_Address`, `member_Reference`). The path then describes what
+the branch *is*, and is unaffected by union declaration order.
+
+```scala
+val abrisConfig = AbrisConfig
+  .fromConfluentAvro
+  .downloadReaderSchemaByLatestVersion
+  .andTopicNameStrategy("topic123")
+  .usingSchemaRegistry("http://localhost:8081")
+  .withStableUnionIds()
+
+val deserialized = dataFrame.select(from_avro(col("value"), abrisConfig) as 'data)
+
+// union branch access with stable names:
+deserialized.select(col("data.location.member_Address.street"))
+// vs. default positional names:
+deserialized.select(col("data.location.member0.street"))
+```
+
+Requires Spark 3.5.1 or later. An `IllegalStateException` is thrown at plan evaluation time if
+the running Spark version does not support this feature.
+
+> **Note:** `withStableUnionIds()` applies only to the default schema converter. If you supply a
+> custom `SchemaConverter` via `withSchemaConverter(...)`, you are responsible for passing the
+> flag through in your own implementation.
+
 ## Multiple schemas in one topic
 The naming strategies RecordName and TopicRecordName allow for a one topic to receive different payloads, 
 i.e. payloads containing different schemas that do not have to be compatible, 
