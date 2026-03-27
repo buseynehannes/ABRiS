@@ -397,7 +397,7 @@
         <profile>
             <id>spark-3.5</id>
             <properties>
-                <spark.version>3.5.3</spark.version>
+                <spark.version>3.5.0</spark.version>
                 <avro.version>1.11.2</avro.version>
                 <jackson.core.version>2.15.2</jackson.core.version>
             </properties>
