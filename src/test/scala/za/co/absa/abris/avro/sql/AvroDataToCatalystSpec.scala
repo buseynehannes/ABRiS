@@ -146,7 +146,7 @@ class AvroDataToCatalystSpec extends AnyFlatSpec with Matchers with BeforeAndAft
     // test successful if no exception is thrown
   }
 
-  it should "use stable member_<TypeName> field names for unions when withStableUnionIds() is set" in {
+  it should "use stable member_<TypeName> field names for unions when \"stable-union\" schema converter is set" in {
     // A record with a nullable multi-type union: ["null", "TypeA", "TypeB"]
     val avroSchemaString =
       """{
@@ -163,7 +163,7 @@ class AvroDataToCatalystSpec extends AnyFlatSpec with Matchers with BeforeAndAft
 
     val fromAvroConfig = FromAvroConfig()
       .withReaderSchema(avroSchemaString)
-      .withStableUnionIds()
+      .withSchemaConverter("stable-union")
 
     val column = from_avro(col("avroBytes"), fromAvroConfig)
     val schema = column.expr.dataType.asInstanceOf[org.apache.spark.sql.types.StructType]

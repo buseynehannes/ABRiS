@@ -19,15 +19,7 @@ import org.apache.avro.Schema
 import org.apache.spark.sql.avro.SchemaConverters
 import org.apache.spark.sql.types.DataType
 
-/** Default [[SchemaConverter]] that delegates to Spark's [[SchemaConverters]].
- *
- * @param useStableIdForUnionType when `true`, Avro union branches are decoded into Spark struct
- *                                fields named `member_<TypeName>` (e.g. `member_BrowserPage`)
- *                                instead of the default positional `member0`, `member1`, etc.
- *                                Requires Spark 3.5 or later; see [[AbrisAvroDeserializer]].
- */
-class DefaultSchemaConverter(useStableIdForUnionType: Boolean = false) extends SchemaConverter {
+class DefaultSchemaConverter extends SchemaConverter {
   override val shortName: String = "default"
-  override def toSqlType(avroSchema: Schema): DataType =
-    SchemaConverters.toSqlType(avroSchema, useStableIdForUnionType).dataType
+  override def toSqlType(avroSchema: Schema): DataType = SchemaConverters.toSqlType(avroSchema).dataType
 }

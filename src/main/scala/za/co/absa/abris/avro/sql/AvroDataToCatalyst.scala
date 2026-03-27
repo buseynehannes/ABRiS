@@ -40,7 +40,7 @@ private[abris] case class AvroDataToCatalyst(
   schemaRegistryConf: Option[Map[String, String]]
 ) extends UnaryExpression with ExpectsInputTypes {
 
-  @transient private lazy val schemaConverter = loadSchemaConverter(config.schemaConverter, config.stableUnionIds)
+  @transient private lazy val schemaConverter = loadSchemaConverter(config.schemaConverter)
 
   override def inputTypes: Seq[BinaryType.type] = Seq(BinaryType)
 
@@ -68,7 +68,7 @@ private[abris] case class AvroDataToCatalyst(
 
   @transient private var decoder: BinaryDecoder = _
 
-  @transient private lazy val deserializer = new AbrisAvroDeserializer(readerSchema, dataType, config.stableUnionIds)
+  @transient private lazy val deserializer = new AbrisAvroDeserializer(readerSchema, dataType)
 
   // Reused result object (usually of type IndexedRecord)
   @transient private var result: Any = _
@@ -173,13 +173,13 @@ private[abris] case class AvroDataToCatalyst(
   override protected def withNewChildInternal(newChild: Expression): Expression =
     copy(child = newChild)
 
-  private def loadSchemaConverter(nameOpt: Option[String], stableUnionIds: Boolean) = {
+  private def loadSchemaConverter(nameOpt: Option[String]) = {
     import scala.collection.JavaConverters._
     nameOpt match {
       case Some(name) => ServiceLoader.load(classOf[SchemaConverter]).asScala
         .find(c => c.shortName == name || c.getClass.getName == name)
         .getOrElse(throw new ClassNotFoundException(s"Could not find schema converter $name"))
-      case None => new DefaultSchemaConverter(stableUnionIds)
+      case None => new DefaultSchemaConverter()
     }
   }
 }

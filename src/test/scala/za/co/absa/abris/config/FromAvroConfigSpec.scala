@@ -68,18 +68,4 @@ class FromAvroConfigSpec extends AnyFlatSpec with Matchers {
     }
     thrown2.getMessage.contains(Key.WriterSchema) shouldBe true
   }
-
-  it should "set stableUnionIds when withStableUnionIds() is called" in {
-    val config = FromAvroConfig()
-      .withReaderSchema("bar")
-      .withStableUnionIds()
-
-    config.abrisConfig()(Key.StableUnionIds) shouldBe true
-  }
-
-  it should "not set stableUnionIds when withStableUnionIds() is not called" in {
-    val config = FromAvroConfig().withReaderSchema("bar")
-
-    config.abrisConfig().get(Key.StableUnionIds) shouldBe None
-  }
 }

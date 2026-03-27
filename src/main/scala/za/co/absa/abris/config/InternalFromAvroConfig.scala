@@ -33,10 +33,6 @@ private[abris] class InternalFromAvroConfig(map: Map[String, Any]) {
     .get(Key.SchemaConverter)
     .map(_.asInstanceOf[String])
 
-  val stableUnionIds: Boolean = map
-    .get(Key.StableUnionIds)
-    .exists(_.asInstanceOf[Boolean])
-
   val deserializationHandler: DeserializationExceptionHandler = map
     .get(Key.ExceptionHandler)
     .map(s => s.asInstanceOf[DeserializationExceptionHandler])

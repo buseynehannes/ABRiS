@@ -338,27 +338,6 @@ class FromAvroConfig private(
     )
 
   /**
-    * Enables stable, name-based field identifiers for Avro union types in the decoded Spark struct.
-    *
-    * By default, ABRiS (via Spark's [[org.apache.spark.sql.avro.SchemaConverters]]) maps each
-    * non-null branch of an Avro union to an anonymous `memberN` field (e.g. `member0`, `member1`).
-    * When this option is enabled, each branch is instead named `member_<TypeName>` (e.g.
-    * `member_BrowserPage`, `member_ApplicationScreen`), which makes column paths self-documenting
-    * and robust against union branch reordering.
-    *
-    * Requires Spark 3.5 or later. An [[IllegalStateException]] is thrown at plan evaluation time
-    * if the running Spark version does not support the stable-identifiers constructor of
-    * [[org.apache.spark.sql.avro.AvroDeserializer]].
-    *
-    * @return a new [[FromAvroConfig]] with stable union identifiers enabled
-    */
-  def withStableUnionIds(): FromAvroConfig =
-    new FromAvroConfig(
-      abrisConfig + (Key.StableUnionIds -> true),
-      schemaRegistryConf
-    )
-
-  /**
    * @param exceptionHandler exception handler used for converting from avro
    */
   def withExceptionHandler(exceptionHandler: DeserializationExceptionHandler): FromAvroConfig =
@@ -385,6 +364,5 @@ object FromAvroConfig {
     val WriterSchema = "writerSchema"
     val SchemaConverter = "schemaConverter"
     val ExceptionHandler = "exceptionHandler"
-    val StableUnionIds = "stableUnionIds"
   }
 }
