@@ -274,9 +274,9 @@ val abrisConfig = AbrisConfig
   .withSchemaConverter("custom")
 ```
 
- ### Stable union field names (Spark 3.5.1+)
+ ### Stable union field names (Spark 3.5.0+)
  
- ABRiS ships a built-in `"stable-union"` schema converter that delegates to Spark's [`SchemaConverters.toSqlType(schema, useStableIdForUnionType = true)`](https://spark.apache.org/docs/latest/sql-data-sources-avro.html#supported-types-for-avro-gt-spark-sql-conversion), naming each union branch `member_<TypeName>` instead of the default positional `member0`, `member1`, etc.
+ ABRiS ships a built-in `"stable-union"` schema converter that delegates to Spark's [`enableStableIdentifiersForUnionType`](https://spark.apache.org/docs/latest/sql-data-sources-avro.html#data-source-option) behaviour, naming each union branch `member_<TypeName>` instead of the default positional `member0`, `member1`, etc.
  
  ```scala
  val abrisConfig = AbrisConfig
@@ -287,7 +287,7 @@ val abrisConfig = AbrisConfig
    .withSchemaConverter("stable-union")
  ```
  
- Requires Spark 3.5.1 or later (where `useStableIdForUnionType` was introduced). An `UnsupportedOperationException` is thrown at runtime on older versions.
+ Requires Spark 3.5.1 or later (where `SchemaConverters.toSqlType(schema, useStableIdForUnionType = true)` was introduced). An `UnsupportedOperationException` is thrown at runtime on older versions.
 
 ## Multiple schemas in one topic
 The naming strategies RecordName and TopicRecordName allow for a one topic to receive different payloads, 
