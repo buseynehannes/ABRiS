@@ -26,9 +26,14 @@ import scala.util.Try
 /**
  * Compatibility layer handling different versions of AvroDeserializer
  * the package also allows to access package private class
+ *
+ * @param useStableIdForUnionType when `true`, Avro union branches are named `member_<TypeName>`
+ *                                instead of positional `member0`, `member1`. Requires Spark 3.5.1
+ *                                or later; an [[IllegalStateException]] is thrown on older
+ *                                Spark versions that do not expose this constructor parameter.
  */
 @DeveloperApi
-class AbrisAvroDeserializer(rootAvroType: Schema, rootCatalystType: DataType) {
+class AbrisAvroDeserializer(rootAvroType: Schema, rootCatalystType: DataType, useStableIdForUnionType: Boolean = false) {
 
   private val deserializer = {
     val clazz = classOf[AvroDeserializer]
@@ -41,19 +46,29 @@ class AbrisAvroDeserializer(rootAvroType: Schema, rootCatalystType: DataType) {
       case currCtor if currCtor.getParameterTypes sameElements
         Array(schemaClz, dataTypeClz) =>
         // Spark 2.4
+        if (useStableIdForUnionType) {
+          throw new IllegalStateException(
+            "withStableUnionIds() requires Spark 3.5.1 or later. " +
+            "The running Spark version does not support stable union type identifiers.")
+        }
         currCtor.newInstance(rootAvroType, rootCatalystType)
       case currCtor if currCtor.getParameterTypes sameElements
         Array(schemaClz, dataTypeClz, stringClz) =>
         // Spark 3.0 - Spark 3.5.0 (including)
+        if (useStableIdForUnionType) {
+          throw new IllegalStateException(
+            "withStableUnionIds() requires Spark 3.5.1 or later. " +
+            "The running Spark version does not support stable union type identifiers.")
+        }
         currCtor.newInstance(rootAvroType, rootCatalystType, "LEGACY")
       case currCtor if currCtor.getParameterTypes sameElements
         Array(schemaClz, dataTypeClz, stringClz, booleanClz) =>
         // Spark 3.5.1 - 3.5.2
-        currCtor.newInstance(rootAvroType, rootCatalystType, "LEGACY", false: java.lang.Boolean)
+        currCtor.newInstance(rootAvroType, rootCatalystType, "LEGACY", useStableIdForUnionType: java.lang.Boolean)
       case currCtor if currCtor.getParameterTypes.toSeq sameElements
         Array(schemaClz, dataTypeClz, stringClz, booleanClz, stringClz) =>
         // Spark 4.0.0-SNAPSHOT+
-        currCtor.newInstance(rootAvroType, rootCatalystType, "LEGACY", false: java.lang.Boolean, "")
+        currCtor.newInstance(rootAvroType, rootCatalystType, "LEGACY", useStableIdForUnionType: java.lang.Boolean, "")
     } match {
       case Some(value: AvroDeserializer) =>
         value

@@ -146,6 +146,61 @@ class AvroDataToCatalystSpec extends AnyFlatSpec with Matchers with BeforeAndAft
     // test successful if no exception is thrown
   }
 
+  it should "use stable member_<TypeName> field names for unions when withStableUnionIds() is set" in {
+    // A record with a multi-type union field: ["null", "BrowserPage", "ApplicationScreen"]
+    val avroSchemaString =
+      """{
+        |  "type": "record",
+        |  "name": "Page",
+        |  "fields": [{
+        |    "name": "pageLocation",
+        |    "type": ["null",
+        |      {"type": "record", "name": "BrowserPage",      "fields": [{"name": "url",        "type": "string"}]},
+        |      {"type": "record", "name": "ApplicationScreen","fields": [{"name": "screenName", "type": "string"}]}
+        |    ]
+        |  }]
+        |}""".stripMargin
+
+    val fromAvroConfig = FromAvroConfig()
+      .withReaderSchema(avroSchemaString)
+      .withStableUnionIds()
+
+    val column = from_avro(col("avroBytes"), fromAvroConfig)
+    val schema = column.expr.dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
+    val unionStruct = schema("pageLocation").dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
+
+    unionStruct.fieldNames should contain ("member_BrowserPage")
+    unionStruct.fieldNames should contain ("member_ApplicationScreen")
+    unionStruct.fieldNames should not contain "member0"
+    unionStruct.fieldNames should not contain "member1"
+  }
+
+  it should "use positional member0/member1 field names for unions by default" in {
+    val avroSchemaString =
+      """{
+        |  "type": "record",
+        |  "name": "Page",
+        |  "fields": [{
+        |    "name": "pageLocation",
+        |    "type": ["null",
+        |      {"type": "record", "name": "BrowserPage",      "fields": [{"name": "url",        "type": "string"}]},
+        |      {"type": "record", "name": "ApplicationScreen","fields": [{"name": "screenName", "type": "string"}]}
+        |    ]
+        |  }]
+        |}""".stripMargin
+
+    val fromAvroConfig = FromAvroConfig()
+      .withReaderSchema(avroSchemaString)
+
+    val column = from_avro(col("avroBytes"), fromAvroConfig)
+    val schema = column.expr.dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
+    val unionStruct = schema("pageLocation").dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
+
+    unionStruct.fieldNames should contain ("member0")
+    unionStruct.fieldNames should contain ("member1")
+    unionStruct.fieldNames should not contain "member_BrowserPage"
+  }
+
   it should "throw a Spark exception when unable to deserialize " in {
 
     val providedData = Seq(Row("$£%^".getBytes()))
