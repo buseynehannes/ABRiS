@@ -146,34 +146,36 @@ class AvroDataToCatalystSpec extends AnyFlatSpec with Matchers with BeforeAndAft
     // test successful if no exception is thrown
   }
 
-  it should "use stable member_<TypeName> field names for unions when \"stable-union\" schema converter is set" in {
-    // A record with a nullable multi-type union: ["null", "TypeA", "TypeB"]
-    val avroSchemaString =
-      """{
-        |  "type": "record",
-        |  "name": "Event",
-        |  "fields": [{
-        |    "name": "payload",
-        |    "type": ["null",
-        |      {"type": "record", "name": "TypeA", "fields": [{"name": "fieldA", "type": "string"}]},
-        |      {"type": "record", "name": "TypeB", "fields": [{"name": "fieldB", "type": "int"}]}
-        |    ]
-        |  }]
-        |}""".stripMargin
+   it should "use stable member_<typename> field names for unions when \"stable-union\" schema converter is set" in {
+     // A record with a nullable multi-type union: ["null", "TypeA", "TypeB"]
+     val avroSchemaString =
+       """{
+         |  "type": "record",
+         |  "name": "Event",
+         |  "fields": [{
+         |    "name": "payload",
+         |    "type": ["null",
+         |      {"type": "record", "name": "TypeA", "fields": [{"name": "fieldA", "type": "string"}]},
+         |      {"type": "record", "name": "TypeB", "fields": [{"name": "fieldB", "type": "int"}]}
+         |    ]
+         |  }]
+         |}""".stripMargin
 
-    val fromAvroConfig = FromAvroConfig()
-      .withReaderSchema(avroSchemaString)
-      .withSchemaConverter("stable-union")
+     val fromAvroConfig = FromAvroConfig()
+       .withReaderSchema(avroSchemaString)
+       .withSchemaConverter("stable-union")
 
-    val column = from_avro(col("avroBytes"), fromAvroConfig)
-    val schema = column.expr.dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
-    val unionStruct = schema("payload").dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
+     val column = from_avro(col("avroBytes"), fromAvroConfig)
+     val schema = column.expr.dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
+     val unionStruct = schema("payload").dataType.asInstanceOf[org.apache.spark.sql.types.StructType]
 
-    unionStruct.fieldNames should contain ("member_TypeA")
-    unionStruct.fieldNames should contain ("member_TypeB")
-    unionStruct.fieldNames should not contain "member0"
-    unionStruct.fieldNames should not contain "member1"
-  }
+     // Spark names union branches member_<typename>; casing varies by Spark version (lowercase since 3.5.1, preserved since ~3.5.3)
+     val fieldNames = unionStruct.fieldNames.map(_.toLowerCase)
+     fieldNames should contain ("member_typea")
+     fieldNames should contain ("member_typeb")
+     fieldNames should not contain "member0"
+     fieldNames should not contain "member1"
+   }
 
   it should "use positional member0/member1 field names for unions by default" in {
     val avroSchemaString =
@@ -198,7 +200,7 @@ class AvroDataToCatalystSpec extends AnyFlatSpec with Matchers with BeforeAndAft
 
     unionStruct.fieldNames should contain ("member0")
     unionStruct.fieldNames should contain ("member1")
-    unionStruct.fieldNames should not contain "member_TypeA"
+    unionStruct.fieldNames.map(_.toLowerCase) should not contain "member_typea"
   }
 
   it should "throw a Spark exception when unable to deserialize " in {

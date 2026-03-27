@@ -244,6 +244,7 @@ val avroSchema = SparkAvroConversions.toAvroSchema(sqlSchema, avro_schema_name, 
 If you would like to use custom logic to convert from Avro to Spark, you can implement the `SchemaConverter` trait.
 The custom class is loaded in ABRiS using the service provider interface (SPI), so you need to register your class in your
 `META-INF/services` resource directory. You can then configure the custom class with its short name or the fully qualified name.
+ABRiS also ships a built-in `"stable-union"` converter that enables Spark's [`enableStableIdentifiersForUnionType`](https://spark.apache.org/docs/latest/sql-data-sources-avro.html#data-source-option) behaviour (requires Spark 3.5.1+).
 
 **Example**
 
@@ -273,21 +274,6 @@ val abrisConfig = AbrisConfig
   .usingSchemaRegistry(registryConfig)
   .withSchemaConverter("custom")
 ```
-
- ### Stable union field names (Spark 3.5.0+)
- 
- ABRiS ships a built-in `"stable-union"` schema converter that delegates to Spark's [`enableStableIdentifiersForUnionType`](https://spark.apache.org/docs/latest/sql-data-sources-avro.html#data-source-option) behaviour, naming each union branch `member_<TypeName>` instead of the default positional `member0`, `member1`, etc.
- 
- ```scala
- val abrisConfig = AbrisConfig
-   .fromConfluentAvro
-   .downloadReaderSchemaByLatestVersion
-   .andTopicNameStrategy("topic123")
-   .usingSchemaRegistry("http://localhost:8081")
-   .withSchemaConverter("stable-union")
- ```
- 
- Requires Spark 3.5.1 or later (where `SchemaConverters.toSqlType(schema, useStableIdForUnionType = true)` was introduced). An `UnsupportedOperationException` is thrown at runtime on older versions.
 
 ## Multiple schemas in one topic
 The naming strategies RecordName and TopicRecordName allow for a one topic to receive different payloads, 

@@ -271,7 +271,6 @@
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                     <junitxml>.</junitxml>
                     <filereports>TestSuite.txt</filereports>
-                    <argLine>--add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED</argLine>
                 </configuration>
                 <executions>
                     <execution>
@@ -399,6 +398,15 @@
             <id>spark-3.5</id>
             <properties>
                 <spark.version>3.5.3</spark.version>
+                <avro.version>1.11.2</avro.version>
+                <jackson.core.version>2.15.2</jackson.core.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>spark-3.5.1</id>
+            <!-- Minimum Spark version supporting useStableIdForUnionType in SchemaConverters.toSqlType -->
+            <properties>
+                <spark.version>3.5.1</spark.version>
                 <avro.version>1.11.2</avro.version>
                 <jackson.core.version>2.15.2</jackson.core.version>
             </properties>
