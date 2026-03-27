@@ -147,6 +147,10 @@ class AvroDataToCatalystSpec extends AnyFlatSpec with Matchers with BeforeAndAft
   }
 
    it should "use stable member_<typename> field names for unions when \"stable-union\" schema converter is set" in {
+     assume(
+       org.apache.spark.SPARK_VERSION >= "3.5.1",
+       s"stable-union requires Spark >= 3.5.1 (running ${org.apache.spark.SPARK_VERSION})"
+     )
      // A record with a nullable multi-type union: ["null", "TypeA", "TypeB"]
      val avroSchemaString =
        """{
